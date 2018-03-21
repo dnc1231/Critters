@@ -2,14 +2,10 @@ package assignment4;
 /* CRITTERS Critter.java
  * EE422C Project 4 submission by
  * Replace <...> with your actual data.
- * <Student1 Name>
- * <Student1 EID>
- * <Student1 5-digit Unique No.>
- * <Student2 Name>
- * <Student2 EID>
- * <Student2 5-digit Unique No.>
- * Slip days used: <0>
- * Fall 2016
+ * Daniel Canterino
+ * djc3323
+ * 15640
+ * Spring 2018
  */
 
 
@@ -25,7 +21,8 @@ public abstract class Critter {
 	private static String myPackage;
 	private	static List<Critter> population = new java.util.ArrayList<Critter>();
 	private static List<Critter> babies = new java.util.ArrayList<Critter>();
-
+	private static int timestep = 0;
+	
 	// Gets the package name.  This assumes that Critter and its subclasses are all in the same package.
 	static {
 		myPackage = Critter.class.getPackage().toString().split(" ")[1];
@@ -74,6 +71,17 @@ public abstract class Critter {
 	 * @throws InvalidCritterException
 	 */
 	public static void makeCritter(String critter_class_name) throws InvalidCritterException {
+		try {
+			Class <?> c = Class.forName(critter_class_name);
+			Critter v = (Critter) c.newInstance();
+			//population.add(v);
+		}catch (ClassNotFoundException e){
+			throw new InvalidCritterException(critter_class_name);
+		}catch (IllegalAccessException e) {
+			throw new InvalidCritterException(critter_class_name);
+		}catch (InstantiationException e) {
+			throw new InvalidCritterException(critter_class_name);
+		}
 	}
 	
 	/**
@@ -84,7 +92,16 @@ public abstract class Critter {
 	 */
 	public static List<Critter> getInstances(String critter_class_name) throws InvalidCritterException {
 		List<Critter> result = new java.util.ArrayList<Critter>();
-	
+		try{
+			Class.forName(critter_class_name);
+			for (Critter c : population) {
+				if (c.getClass().getName().equalsIgnoreCase(critter_class_name)) {
+					result.add(c);
+				}
+			}
+		}catch (ClassNotFoundException e){
+			throw new InvalidCritterException(critter_class_name);
+		}
 		return result;
 	}
 	
@@ -168,11 +185,55 @@ public abstract class Critter {
 	 * Clear the world of all critters, dead and alive
 	 */
 	public static void clearWorld() {
+		population.clear();
+		babies.clear();
 		// Complete this method.
 	}
 	
 	public static void worldTimeStep() {
 		// Complete this method.
+		// 1. increment timestep; timestep++;
+		timestep++;
+		// 2. doTimeSteps();
+		for (Critter c : population) {
+			c.doTimeStep();
+		}
+		// 3. Do the fights. doEncounters();
+		for (Critter A : population) {
+			for (Critter B : population) {
+				if ((A != B) && (A.x_coord == B.x_coord) && (A.y_coord == B.y_coord)){
+					int rollA = 0;
+					int rollB = 0;
+					if ( A.fight(B.toString()) ) {
+						rollA = getRandomInt(A.energy);
+					}
+					if (B.fight(A.toString())) {
+						rollB = getRandomInt(B.energy);
+					}
+					if (rollA > rollB) {
+						A.energy += B.getEnergy()/2;
+						B.energy = 0;
+					}else {//B is default winner in case of tie as well if B roll is greater
+						B.energy += A.getEnergy()/2;
+						A.energy = 0;
+					}
+				}
+			}
+		}
+		// 4. updateRestEnergy();
+		for (Critter c : population) {
+			c.energy = c.energy - Params.rest_energy_cost;
+		}
+		// 5. Generate Algae 
+		//genAlgae();
+		// 6. Move babies to general population. 
+		population.addAll(babies);
+		babies.clear();
+		for (Critter c : population) {
+			if (c.getEnergy() <= 0) {
+				population.remove(c);
+			}
+		}
 	}
 	
 	public static void displayWorld() {
