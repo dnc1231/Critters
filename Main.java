@@ -4,7 +4,7 @@ package assignment4;
  * Replace <...> with your actual data.
  * Daniel Canterino
  * djc3323
- * 15640
+ * 15460
  * Spring 2018
  */
 
@@ -64,12 +64,77 @@ public class Main {
         }
 
         /* Do not alter the code above for your submission. */
-        /* Write your code below. */
         
-        // System.out.println("GLHF");
-        
-        /* Write your code above */
+        while (true) {
+        	System.out.print("critters>" );
+        	String line = kb.nextLine();
+        	System.out.print("\n");
+        	if (line.equals("quit")) {
+        		break;
+        	}else if (line.equals("show")){
+        		Critter.displayWorld();
+        	}else {
+        		if (!parse(line)) {
+        			System.out.println("error processing: " + line);
+        		}
+        	}
+        	
+        }
         System.out.flush();
-
     }
+    
+    private static boolean parse(String line) {
+    	if (checkStep(line)) {
+    		return true;
+    	}else if (checkSeed(line)) {
+    		return true;
+    	}else if (checkMake(line)) {
+    		return true;
+    	}else if (checkStats(line)) {
+    		return true;
+    	}else {
+    		return false;
+    	}
+    }
+    
+    private static boolean checkStep(String line) {
+    	String command = "step";
+    	if (line.regionMatches(0, command, 0, 4)) {
+    		if (line.length() == 4) {
+    			Critter.worldTimeStep();
+    			return true;
+    		}else {
+    			if (line.charAt(4) != ' ') {
+    				return false; 
+    			}else {
+    				for (int i = 5; i < line.length(); i++) {
+    					if (line.charAt(i) < '0' || line.charAt(i) > '9') {
+    						return false;
+    					}
+    				}
+    				String number = line.substring(5, line.length());
+    				Integer num = Integer.valueOf(number);
+    				for (int i = 0; i < num; i++) {
+    					Critter.worldTimeStep();
+    				}
+    				return true;
+    			}
+    		}
+    	}else {
+    		return false;
+    	}
+    }
+    
+    private static boolean checkSeed(String line) {
+    	return true;
+    }
+    
+    private static boolean checkMake(String line) {
+    	return true;
+    }
+    
+    private static boolean checkStats(String line) {
+    	return true;
+    }
+    
 }

@@ -4,7 +4,7 @@ package assignment4;
  * Replace <...> with your actual data.
  * Daniel Canterino
  * djc3323
- * 15640
+ * 15460
  * Spring 2018
  */
 
@@ -21,7 +21,9 @@ public abstract class Critter {
 	private static String myPackage;
 	private	static List<Critter> population = new java.util.ArrayList<Critter>();
 	private static List<Critter> babies = new java.util.ArrayList<Critter>();
+	
 	private static int timestep = 0;
+	private static List<Critter> alreadyMoved = new java.util.ArrayList<Critter>();
 	
 	// Gets the package name.  This assumes that Critter and its subclasses are all in the same package.
 	static {
@@ -48,13 +50,68 @@ public abstract class Critter {
 	private int y_coord;
 	
 	protected final void walk(int direction) {
-	}
-	
-	protected final void run(int direction) {
+		move(direction, 1);
+		energy = energy - Params.walk_energy_cost;
 		
 	}
 	
+	protected final void run(int direction) {
+		move(direction, 2);
+		energy = energy - Params.run_energy_cost;
+	}
+	
+	private void move(int dir, int offset) {
+		switch (dir) {
+		case 1:
+			x_coord = getNewXLocation(x_coord - (1 * offset));
+			y_coord = getNewYLocation(y_coord - (1 * offset));
+			break;
+		case 2:
+			x_coord = getNewXLocation(x_coord - (1 * offset));
+			break;
+		case 3:
+			x_coord = getNewXLocation(x_coord - (1 * offset));
+			y_coord = getNewYLocation(y_coord + (1 * offset));
+			break;
+		case 4:
+			y_coord = getNewYLocation(y_coord - (1 * offset));
+			break;
+		case 5:
+			y_coord = getNewYLocation(y_coord + (1 * offset));
+			break;
+		case 6:
+			x_coord = getNewXLocation(x_coord + (1 * offset));
+			y_coord = getNewYLocation(y_coord - (1 * offset));
+			break;
+		case 7:
+			x_coord = getNewXLocation(x_coord + (1 * offset));
+			break;
+		case 8:
+			x_coord = getNewXLocation(x_coord + (1 * offset));
+			y_coord = getNewYLocation(y_coord + (1 * offset));
+			break;
+		}
+	}
+	
 	protected final void reproduce(Critter offspring, int direction) {
+		if (energy < Params.min_reproduce_energy) {
+			return;
+		}else {
+			if (energy % 2 == 0) {
+				offspring.energy = energy/2;
+				energy = energy/2;
+			}else {
+				offspring.energy = energy/2;
+				energy = energy/2 + 1;
+			}
+			offspring.x_coord = x_coord;
+			offspring.y_coord = y_coord;
+			offspring.walk(direction);
+			babies.add(offspring);
+			return;
+		}
+		
+		
 	}
 
 	public abstract void doTimeStep();
@@ -72,9 +129,11 @@ public abstract class Critter {
 	 */
 	public static void makeCritter(String critter_class_name) throws InvalidCritterException {
 		try {
-			Class <?> c = Class.forName(critter_class_name);
+			Class <?> c = Class.forName(myPackage + "." + critter_class_name);
+			@SuppressWarnings("deprecation")
 			Critter v = (Critter) c.newInstance();
-			//population.add(v);
+			
+			
 		}catch (ClassNotFoundException e){
 			throw new InvalidCritterException(critter_class_name);
 		}catch (IllegalAccessException e) {
@@ -201,34 +260,27 @@ public abstract class Critter {
 		// 3. Do the fights. doEncounters();
 		for (Critter A : population) {
 			for (Critter B : population) {
-				if ((A != B) && (A.x_coord == B.x_coord) && (A.y_coord == B.y_coord)){
-					int rollA = 0;
-					int rollB = 0;
-					if ( A.fight(B.toString()) ) {
-						rollA = getRandomInt(A.energy);
-					}
-					if (B.fight(A.toString())) {
-						rollB = getRandomInt(B.energy);
-					}
-					if (rollA > rollB) {
-						A.energy += B.getEnergy()/2;
-						B.energy = 0;
-					}else {//B is default winner in case of tie as well if B roll is greater
-						B.energy += A.getEnergy()/2;
-						A.energy = 0;
-					}
+				if ((A != B) && (A.x_coord == B.x_coord) && (A.y_coord == B.y_coord) && (A.getEnergy() >= 0) && (B.getEnergy() >= 0)){
+					fight(A, B);
 				}
 			}
 		}
+		alreadyMoved.clear();//resets the list tracking who moved during an encounter that turn
 		// 4. updateRestEnergy();
 		for (Critter c : population) {
 			c.energy = c.energy - Params.rest_energy_cost;
 		}
 		// 5. Generate Algae 
-		//genAlgae();
+		for (int i = 0; i < Params.refresh_algae_count; i++) {
+			Algae newAlgae = new Algae();
+			newAlgae.setX_coord(getRandomInt(Params.world_width));
+			newAlgae.setY_coord(getRandomInt(Params.world_height));
+			newAlgae.setEnergy(Params.start_energy);
+		}
 		// 6. Move babies to general population. 
 		population.addAll(babies);
 		babies.clear();
+		// 7. Cull dead critters from population.
 		for (Critter c : population) {
 			if (c.getEnergy() <= 0) {
 				population.remove(c);
@@ -237,6 +289,123 @@ public abstract class Critter {
 	}
 	
 	public static void displayWorld() {
-		// Complete this method.
+		for (int i = -1; i < Params.world_width + 1; i++) {
+			if (i == -1 || i == Params.world_width) {
+				System.out.print('+');
+			}else {
+				System.out.print('-');
+			}
+		}
+		System.out.print("\n");
+		for (int i = 0; i < Params.world_height; i++) {
+			for (int j = -1; j < Params.world_width + 1; j++) {
+				if (j == -1 || j == Params.world_width) {
+					System.out.print('|');
+				}else if(isLocationOccupied(j, i)){
+					for (Critter c : population) {
+						if (c.x_coord == j && c.y_coord == i) {
+							System.out.print(c.toString());
+						}
+					}
+				}else {
+					System.out.print(" ");
+				}
+			}
+			System.out.print("\n");
+		}
+		System.out.print("\n");
+		for (int i = -1; i < Params.world_width + 1; i++) {
+			if (i == -1 || i == Params.world_width) {
+				System.out.print('+');
+			}else {
+				System.out.print('-');
+			}
+		}
+		
+	}
+	
+	private static void fight(Critter A, Critter B) {
+		int rollA = 0;
+		int rollB = 0;
+		if ( A.fight(B.toString()) ) {
+			rollA = getRandomInt(A.energy);
+		}else {
+			if(checkForFlee(A)) {
+				if (!B.fight(A.toString())) {//will allow B to flee as well before returning if both B and A select to flee
+					if (checkForFlee(B)) {
+						return;
+					}
+				}
+				return;
+			}
+		}
+		if (B.fight(A.toString())) {
+			rollB = getRandomInt(B.energy);
+		}else {
+			if (checkForFlee(B)) {
+				return;
+			}
+		}
+		if (rollA > rollB) {
+			A.energy += B.getEnergy()/2;
+			B.energy = 0;
+		}else {//B is default winner in case of tie as well if B roll is greater
+			B.energy += A.getEnergy()/2;
+			A.energy = 0;
+		}
+	}
+	
+	private static boolean checkForFlee(Critter A) {
+		int dir = 1;
+		if (alreadyMoved.contains(A)) {
+			A.energy = A.energy - Params.run_energy_cost;
+			return false;
+		}
+		for (int x = -2; x < 3; x += 2) {
+			for (int y = -2; y < 3; y += 2) {
+				if (x == 0 && y == 0) {
+				}else{
+					int newX = getNewXLocation(A.x_coord + x);
+					int newY = getNewYLocation(A.y_coord + y);
+					if (!isLocationOccupied(newX, newY)) {//if the location is not occupied AND critter has not already moved this turn, run to it
+						A.run(dir);
+						alreadyMoved.add(A);
+						A.energy = A.energy - Params.run_energy_cost;
+						return true;
+						}
+					dir++;
+				}
+			}
+		}
+		return false;
+	}
+	
+	private static boolean isLocationOccupied(int x, int y) {
+		for (Critter c : population) {
+			if (c.x_coord == x && c.y_coord == y) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	private static int getNewXLocation(int x) {
+		int newX = x;
+		if (x < 0) {
+			newX = Params.world_width + x;
+		}else if (x > Params.world_width) {
+			newX = x - Params.world_width;
+		}
+		return newX;
+	}
+	
+	private static int getNewYLocation(int y) {
+		int newY = y;
+		if (y < 0) {
+			newY = Params.world_height + y;
+		}else if (y > Params.world_height) {
+			newY = y - Params.world_height;
+		}
+		return newY;
 	}
 }
