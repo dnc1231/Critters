@@ -49,50 +49,72 @@ public abstract class Critter {
 	private int x_coord;
 	private int y_coord;
 	
+	/**
+	 * Moves the critter in a walk
+	 * @param direction in with respect to a circle with 0 being directly to the right and each additional is moving around the circle in a counter
+	 * clockwise fashion for a total of 8 possible directions around the critter
+	 */
 	protected final void walk(int direction) {
 		move(direction, 1);
 		energy = energy - Params.walk_energy_cost;
 		
 	}
-	
+	/**
+	 * Moves the critter in a run
+	 * @param direction in with respect to a circle with 0 being directly to the right and each additional is moving around the circle in a counter
+	 * clockwise fashion for a total of 8 possible directions around the critter
+	 */
 	protected final void run(int direction) {
 		move(direction, 2);
 		energy = energy - Params.run_energy_cost;
 	}
 	
+	/**
+	 * Moves the critter with either a walk or run
+	 * @param direction in with respect to a circle with 0 being directly to the right and each additional is moving around the circle in a counter
+	 * clockwise fashion for a total of 8 possible directions around the critter
+	 * @param offset is either 1 for walk or 2 for run
+	 */
 	private void move(int dir, int offset) {
 		switch (dir) {
+		case 0:
+			x_coord = getNewXLocation(x_coord + (1 * offset));
+			break;
 		case 1:
-			x_coord = getNewXLocation(x_coord - (1 * offset));
-			y_coord = getNewYLocation(y_coord - (1 * offset));
+			x_coord = getNewXLocation(x_coord + (1 * offset));
+			y_coord = getNewYLocation(y_coord + (1 * offset));
 			break;
 		case 2:
-			x_coord = getNewXLocation(x_coord - (1 * offset));
+			y_coord = getNewYLocation(y_coord + (1 * offset));
 			break;
 		case 3:
 			x_coord = getNewXLocation(x_coord - (1 * offset));
 			y_coord = getNewYLocation(y_coord + (1 * offset));
 			break;
 		case 4:
-			y_coord = getNewYLocation(y_coord - (1 * offset));
+			x_coord = getNewXLocation(x_coord - (1 * offset));
 			break;
 		case 5:
-			y_coord = getNewYLocation(y_coord + (1 * offset));
+			x_coord = getNewXLocation(x_coord - (1 * offset));
+			y_coord = getNewYLocation(y_coord - (1 * offset));
 			break;
 		case 6:
-			x_coord = getNewXLocation(x_coord + (1 * offset));
 			y_coord = getNewYLocation(y_coord - (1 * offset));
 			break;
 		case 7:
 			x_coord = getNewXLocation(x_coord + (1 * offset));
-			break;
-		case 8:
-			x_coord = getNewXLocation(x_coord + (1 * offset));
-			y_coord = getNewYLocation(y_coord + (1 * offset));
+			y_coord = getNewYLocation(y_coord - (1 * offset));
 			break;
 		}
 	}
 	
+	/**
+	 * The critter reproduces and spawns an offspring next to the critter
+	 * @param offspring is the new critter to be placed world
+	 * @param direction in with respect to a circle with 0 being directly to the right and each additional is moving around the circle in a counter
+	 * clockwise fashion for a total of 8 possible directions around the critter
+	 */
+	 
 	protected final void reproduce(Critter offspring, int direction) {
 		if (energy < Params.min_reproduce_energy) {
 			return;
@@ -107,11 +129,9 @@ public abstract class Critter {
 			offspring.x_coord = x_coord;
 			offspring.y_coord = y_coord;
 			offspring.walk(direction);
-			babies.add(offspring);
+			Critter.babies.add(offspring);
 			return;
 		}
-		
-		
 	}
 
 	public abstract void doTimeStep();
@@ -129,16 +149,16 @@ public abstract class Critter {
 	 */
 	public static void makeCritter(String critter_class_name) throws InvalidCritterException {
 		try {
-			Class <?> c = Class.forName(myPackage + "." + critter_class_name);
+			String className = critter_class_name.substring(0, 1).toUpperCase() + critter_class_name.substring(1);
+			String classType = myPackage + "." + className;
+			Class c = Class.forName(classType);
 			@SuppressWarnings("deprecation")
 			Critter v = (Critter) c.newInstance();
-			
-			
-		}catch (ClassNotFoundException e){
-			throw new InvalidCritterException(critter_class_name);
-		}catch (IllegalAccessException e) {
-			throw new InvalidCritterException(critter_class_name);
-		}catch (InstantiationException e) {
+			v.energy = Params.start_energy;
+			v.x_coord = getRandomInt(Params.world_width);
+			v.y_coord = getRandomInt(Params.world_height);
+			population.add(v);
+		}catch (Exception e) {
 			throw new InvalidCritterException(critter_class_name);
 		}
 	}
@@ -152,9 +172,11 @@ public abstract class Critter {
 	public static List<Critter> getInstances(String critter_class_name) throws InvalidCritterException {
 		List<Critter> result = new java.util.ArrayList<Critter>();
 		try{
-			Class.forName(critter_class_name);
+			String className = critter_class_name.substring(0, 1).toUpperCase() + critter_class_name.substring(1);
+			String classType = myPackage + "." + className;
+			Class crit = Class.forName(classType);
 			for (Critter c : population) {
-				if (c.getClass().getName().equalsIgnoreCase(critter_class_name)) {
+				if (c.getClass().getName().equalsIgnoreCase(classType)) {
 					result.add(c);
 				}
 			}
@@ -246,48 +268,62 @@ public abstract class Critter {
 	public static void clearWorld() {
 		population.clear();
 		babies.clear();
-		// Complete this method.
 	}
 	
+	
+	
+	
+	/**
+	 * performs a world time step for the entire world consisting of the following tasks
+	 */
+	// 1. increment timestep; timestep++;
+	// 2. doTimeSteps();
+	// 3. Do the fights. doEncounters();
+	// 4. updateRestEnergy();
+	// 5. Generate Algae genAlgae();
+	// 6. Move babies to general population. population.addAll(babies); babies.clear();
 	public static void worldTimeStep() {
-		// Complete this method.
-		// 1. increment timestep; timestep++;
 		timestep++;
-		// 2. doTimeSteps();
 		for (Critter c : population) {
+			int prevX = c.x_coord;
+			int prevY = c.y_coord;
 			c.doTimeStep();
+			if (prevX != c.x_coord || prevY != c.y_coord) {
+				alreadyMoved.add(c);
+			}
 		}
-		// 3. Do the fights. doEncounters();
 		for (Critter A : population) {
 			for (Critter B : population) {
-				if ((A != B) && (A.x_coord == B.x_coord) && (A.y_coord == B.y_coord) && (A.getEnergy() >= 0) && (B.getEnergy() >= 0)){
+				if ((A != B) && (A.x_coord == B.x_coord) && (A.y_coord == B.y_coord) && (A.getEnergy() > 0) && (B.getEnergy() > 0)){
 					fight(A, B);
 				}
 			}
 		}
 		alreadyMoved.clear();//resets the list tracking who moved during an encounter that turn
-		// 4. updateRestEnergy();
 		for (Critter c : population) {
 			c.energy = c.energy - Params.rest_energy_cost;
 		}
-		// 5. Generate Algae 
 		for (int i = 0; i < Params.refresh_algae_count; i++) {
 			Algae newAlgae = new Algae();
 			newAlgae.setX_coord(getRandomInt(Params.world_width));
 			newAlgae.setY_coord(getRandomInt(Params.world_height));
 			newAlgae.setEnergy(Params.start_energy);
+			population.add(newAlgae);
 		}
-		// 6. Move babies to general population. 
-		population.addAll(babies);
-		babies.clear();
-		// 7. Cull dead critters from population.
+		population.addAll(Critter.babies);
+		Critter.babies.clear();
+		List<Critter> populationDead = new java.util.ArrayList<Critter>();
 		for (Critter c : population) {
 			if (c.getEnergy() <= 0) {
-				population.remove(c);
+				populationDead.add(c);
 			}
 		}
+		population.removeAll(populationDead);
 	}
 	
+	/**
+	 * Displays the world with all the critters in their locations. Prints | as the edges and + for corners
+	 */
 	public static void displayWorld() {
 		for (int i = -1; i < Params.world_width + 1; i++) {
 			if (i == -1 || i == Params.world_width) {
@@ -313,7 +349,6 @@ public abstract class Critter {
 			}
 			System.out.print("\n");
 		}
-		System.out.print("\n");
 		for (int i = -1; i < Params.world_width + 1; i++) {
 			if (i == -1 || i == Params.world_width) {
 				System.out.print('+');
@@ -321,14 +356,25 @@ public abstract class Critter {
 				System.out.print('-');
 			}
 		}
-		
+		System.out.print("\n");
 	}
 	
+	/**
+	 * Models the fight between 2 critters
+	 * @param Critter A
+	 * @param Critter B
+	 * will either fight or attempt to run away if it does not want to fight. Unless it is algae, which in that case it will 'fight' but with a 0 for a roll
+	 * to essentially give up to whatever is trying to eat it
+	 */
 	private static void fight(Critter A, Critter B) {
 		int rollA = 0;
 		int rollB = 0;
-		if ( A.fight(B.toString()) ) {
-			rollA = getRandomInt(A.energy);
+		if ( A.fight(B.toString()) || A instanceof Algae) {
+			if (A instanceof Algae) {
+				rollA = 0;
+			}else {
+				rollA = getRandomInt(A.energy);
+			}
 		}else {
 			if(checkForFlee(A)) {
 				if (!B.fight(A.toString())) {//will allow B to flee as well before returning if both B and A select to flee
@@ -339,8 +385,12 @@ public abstract class Critter {
 				return;
 			}
 		}
-		if (B.fight(A.toString())) {
-			rollB = getRandomInt(B.energy);
+		if (B.fight(A.toString()) || B instanceof Algae) {
+			if (B instanceof Algae) {
+				rollB = 0;
+			}else {
+				rollB = getRandomInt(B.energy);
+			}
 		}else {
 			if (checkForFlee(B)) {
 				return;
@@ -355,31 +405,32 @@ public abstract class Critter {
 		}
 	}
 	
+	/**
+	 * checks for empty surrounding locations and moves a critter attempting to flee if one is found
+	 * @param Critter A
+	 */
 	private static boolean checkForFlee(Critter A) {
-		int dir = 1;
 		if (alreadyMoved.contains(A)) {
 			A.energy = A.energy - Params.run_energy_cost;
 			return false;
 		}
-		for (int x = -2; x < 3; x += 2) {
-			for (int y = -2; y < 3; y += 2) {
-				if (x == 0 && y == 0) {
-				}else{
-					int newX = getNewXLocation(A.x_coord + x);
-					int newY = getNewYLocation(A.y_coord + y);
-					if (!isLocationOccupied(newX, newY)) {//if the location is not occupied AND critter has not already moved this turn, run to it
-						A.run(dir);
-						alreadyMoved.add(A);
-						A.energy = A.energy - Params.run_energy_cost;
-						return true;
-						}
-					dir++;
-				}
-			}
+		int dir = findNewLocationDirection(A.x_coord, A.y_coord);
+		if (dir >= 0) {
+			A.run(dir);
+			alreadyMoved.add(A);
+			A.energy = A.energy - Params.run_energy_cost;
+			return true;
+		}else {
+			A.energy = A.energy - Params.run_energy_cost;
+			return false;
 		}
-		return false;
 	}
 	
+	/**
+	 * checks to see if a given point is already occupied on the world
+	 * @param x, x coordinate
+	 * @param y, y coordinate
+	 */
 	private static boolean isLocationOccupied(int x, int y) {
 		for (Critter c : population) {
 			if (c.x_coord == x && c.y_coord == y) {
@@ -389,6 +440,10 @@ public abstract class Critter {
 		return false;
 	}
 	
+	/**
+	 * wraps the x coordinate around if the critter reaches the edge
+	 * @param x, x coordinate
+	 */
 	private static int getNewXLocation(int x) {
 		int newX = x;
 		if (x < 0) {
@@ -399,6 +454,10 @@ public abstract class Critter {
 		return newX;
 	}
 	
+	/**
+	 * wraps the y coordinate around if the critter reaches the edge
+	 * @param y, y coordinate
+	 */
 	private static int getNewYLocation(int y) {
 		int newY = y;
 		if (y < 0) {
@@ -407,5 +466,33 @@ public abstract class Critter {
 			newY = y - Params.world_height;
 		}
 		return newY;
+	}
+	
+	/**
+	 * finds an empty space and the corresponding direction that a critter can RUN to to get there from its current position
+	 * @param x, x coordinate
+	 * @param y, y coordinate
+	 * @return integer representing the direction as described above that points to an empty location on the world that the critter can RUN to, not walk
+	 */
+	private static int findNewLocationDirection(int x, int y) {
+		if (!isLocationOccupied(getNewXLocation(x + 2), getNewYLocation(y))) {
+			return 0;
+		}else if (!isLocationOccupied(getNewXLocation(x + 2), getNewYLocation(y + 2))) {
+			return 1;
+		}else if (!isLocationOccupied(getNewXLocation(x), getNewYLocation(y + 2))) {
+			return 2;
+		}else if (!isLocationOccupied(getNewXLocation(x - 2), getNewYLocation(y + 2))) {
+			return 3;
+		}else if (!isLocationOccupied(getNewXLocation(x - 2), getNewYLocation(y))) {
+			return 4;
+		}else if (!isLocationOccupied(getNewXLocation(x - 2), getNewYLocation(y - 2))) {
+			return 5;
+		}else if (!isLocationOccupied(getNewXLocation(x), getNewYLocation(y - 2))) {
+			return 6;
+		}else if (!isLocationOccupied(getNewXLocation(x + 2), getNewYLocation(y - 2))) {
+			return 7;
+		}else {
+			return -1;
+		}
 	}
 }

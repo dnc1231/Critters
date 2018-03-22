@@ -8,6 +8,8 @@ package assignment4;
  * Spring 2018
  */
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import java.io.*;
 
@@ -75,7 +77,12 @@ public class Main {
         		Critter.displayWorld();
         	}else {
         		if (!parse(line)) {
-        			System.out.println("error processing: " + line);
+        			if(validCommand(line)) {
+        				System.out.println("error processing: " + line);
+        			}else {
+        				System.out.println("invalid command: " + line);
+        			}
+        			
         		}
         	}
         	
@@ -84,20 +91,20 @@ public class Main {
     }
     
     private static boolean parse(String line) {
-    	if (checkStep(line)) {
+    	if (isStep(line)) {
     		return true;
-    	}else if (checkSeed(line)) {
+    	}else if (isSeed(line)) {
     		return true;
-    	}else if (checkMake(line)) {
-    		return true;
-    	}else if (checkStats(line)) {
-    		return true;
-    	}else {
-    		return false;
-    	}
+    	} else if (isMake(line)) {
+			return true;
+		}else if (isStats(line)) {
+			return true;
+		}else {
+			return false;
+		}
     }
     
-    private static boolean checkStep(String line) {
+    private static boolean isStep(String line) {
     	String command = "step";
     	if (line.regionMatches(0, command, 0, 4)) {
     		if (line.length() == 4) {
@@ -125,16 +132,106 @@ public class Main {
     	}
     }
     
-    private static boolean checkSeed(String line) {
-    	return true;
+    private static boolean isSeed(String line) {
+    	String command = "seed";
+    	if (line.regionMatches(0, command, 0, 4)) {
+    		if (line.charAt(4) != ' ') {
+    			return false;
+    		}else {
+				for (int i = 5; i < line.length(); i++) {
+					if (line.charAt(i) < '0' || line.charAt(i) > '9') {
+						return false;
+					}
+				}
+				String number = line.substring(5, line.length());
+				Long num = Long.valueOf(number);
+				Critter.setSeed(num);
+				return true;
+    		}
+    	}else {
+    		return false;
+    	}
     }
     
-    private static boolean checkMake(String line) {
-    	return true;
+    private static boolean isMake(String line){
+    	String command = "make";
+    	if (line.regionMatches(0, command, 0, 4)) {
+    		if (line.charAt(4) != ' ') {
+    			return false;
+    		}else {
+    			int spaceIndex = line.indexOf(' ', 5);
+    			if (spaceIndex >= 5) {
+    				String critterType = line.substring(5, spaceIndex);
+    				for (int i = spaceIndex + 1; i < line.length(); i++) {
+    					if (line.charAt(i) < '0' || line.charAt(i) > '9') {
+    						return false;
+    					}
+    				}
+    				String number = line.substring(spaceIndex + 1, line.length());
+    				Integer num = Integer.valueOf(number);
+    				for (int i = 0; i < num; i++) {
+    					try {
+							Critter.makeCritter(critterType);
+						} catch (InvalidCritterException e) {
+							return false;
+						}
+    				}
+    				return true;
+    			}else {
+    				try {
+						Critter.makeCritter(line.substring(5, line.length()));
+					} catch (InvalidCritterException e) {
+						return false;
+					}
+    				return true;
+    			}
+    		}
+    	}
+    	return false;
     }
     
-    private static boolean checkStats(String line) {
-    	return true;
+    private static boolean isStats(String line) {
+    	String command = "stats";
+    	if (line.length() <= 5) {
+    		return false;
+    	}
+    	if (line.regionMatches(0, command, 0, 5)) {
+    		if (line.charAt(5) != ' ') {
+    			return false;
+    		}else {
+    			String critterType = line.substring(6, line.length());
+    			try {
+    				 List<Critter> critterList = Critter.getInstances(critterType);
+    				 
+    				 
+    				 
+    				 Critter.runStats(critterList);
+    				 return true;
+				} catch (InvalidCritterException e) {
+					return false;
+				}
+    		}
+    	}else {
+    		return false;
+    	}
+    }
+    
+    private static boolean validCommand (String line) {
+    	ArrayList<String> commands = new ArrayList<String>();
+    	commands.add("show");
+    	commands.add("quit");
+    	commands.add("step");
+    	commands.add("seed");
+    	commands.add("make");
+    	commands.add("stats");
+    	if (line.indexOf(' ') > 0) {
+    		line = line.substring(0, line.indexOf(' '));
+    	}
+    	if (commands.contains(line)) {
+    		return true;
+    	}else {
+    		return false;
+    	}
     }
     
 }
