@@ -82,14 +82,16 @@ public class Main {
         			}else {
         				System.out.println("invalid command: " + line);
         			}
-        			
         		}
         	}
-        	
         }
         System.out.flush();
     }
     
+	/**
+	 * checks if input command is able to be executed from any of the console commands
+	 * @param line, the string input by the user
+	 */
     private static boolean parse(String line) {
     	if (isStep(line)) {
     		return true;
@@ -104,6 +106,11 @@ public class Main {
 		}
     }
     
+	/**
+	 * checks if the input command matches that for the step command
+	 * @param line
+	 * @return true if it ran successfully
+	 */
     private static boolean isStep(String line) {
     	String command = "step";
     	if (line.regionMatches(0, command, 0, 4)) {
@@ -132,6 +139,11 @@ public class Main {
     	}
     }
     
+	/**
+	 * checks if the input command matches that for the Seed command
+	 * @param line
+	 * @return true if it ran successfully
+	 */
     private static boolean isSeed(String line) {
     	String command = "seed";
     	if (line.regionMatches(0, command, 0, 4)) {
@@ -153,6 +165,11 @@ public class Main {
     	}
     }
     
+	/**
+	 * checks if the input command matches that for the make command
+	 * @param line
+	 * @return true if it ran successfully
+	 */
     private static boolean isMake(String line){
     	String command = "make";
     	if (line.regionMatches(0, command, 0, 4)) {
@@ -190,6 +207,11 @@ public class Main {
     	return false;
     }
     
+	/**
+	 * checks if the input command matches that for the stats command
+	 * @param line
+	 * @return true if it ran successfully
+	 */
     private static boolean isStats(String line) {
     	String command = "stats";
     	if (line.length() <= 5) {
@@ -203,11 +225,16 @@ public class Main {
     			try {
     				 List<Critter> critterList = Critter.getInstances(critterType);
     				 
+    				 String className = critterType.substring(0, 1).toUpperCase() + critterType.substring(1);
+    				 String classType = myPackage + "." + className;
+    				 Class c = Class.forName(classType);
+    				 Critter v = (Critter) c.newInstance();
+    				 v.runStats(critterList);
     				 
-    				 
-    				 Critter.runStats(critterList);
     				 return true;
 				} catch (InvalidCritterException e) {
+					return false;
+				} catch (Exception e) {
 					return false;
 				}
     		}
@@ -216,6 +243,11 @@ public class Main {
     	}
     }
     
+	/**
+	 * checks if the input command first word matches any of the console commands
+	 * @param line
+	 * @return true if it found a command it matches
+	 */
     private static boolean validCommand (String line) {
     	ArrayList<String> commands = new ArrayList<String>();
     	commands.add("show");
